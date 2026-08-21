@@ -24,8 +24,25 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Default hostname from environment or fallback to "zephyr"
-DEFAULT_HOST = os.getenv("NIX_HOST", "zephyr")
+# Default hostname from environment or fallback to "nexus".
+# Note: zephyr is excluded from local deployment targets.
+DEFAULT_HOST = os.getenv("NIX_HOST", "nexus")
+DEPLOYMENT_TARGETS = {"nexus", "forge", "sentry"}
+
+
+def _resolve_hostname(hostname: str) -> str:
+    """Resolve and validate a target hostname.
+
+    zephyr is excluded from local deployment targets. If an invalid or
+    excluded hostname is provided, fall back to nexus.
+    """
+    if hostname.lower() == "zephyr":
+        logger.warning("zephyr is excluded from local deployment targets; falling back to nexus")
+        return "nexus"
+    if hostname not in DEPLOYMENT_TARGETS:
+        logger.warning(f"Unknown hostname '{hostname}'; falling back to nexus")
+        return "nexus"
+    return hostname
 
 # Get project root (assuming /etc/nixos)
 PROJECT_ROOT = Path("/etc/nixos")
@@ -140,7 +157,7 @@ def create_server() -> Optional[Server]:
                         "type": "string",
                         "description": "Hostname to build for (default: zephyr)",
                         "default": DEFAULT_HOST,
-                        "enum": ["zephyr", "forge", "nexus", "sentry"],
+                        "enum": ["forge", "nexus", "sentry"],
                     }
                 },
                 "required": [],
@@ -156,7 +173,7 @@ def create_server() -> Optional[Server]:
                         "type": "string",
                         "description": "Hostname to test for (default: zephyr)",
                         "default": DEFAULT_HOST,
-                        "enum": ["zephyr", "forge", "nexus", "sentry"],
+                        "enum": ["forge", "nexus", "sentry"],
                     }
                 },
                 "required": [],
@@ -172,7 +189,7 @@ def create_server() -> Optional[Server]:
                         "type": "string",
                         "description": "Hostname to switch for (default: zephyr)",
                         "default": DEFAULT_HOST,
-                        "enum": ["zephyr", "forge", "nexus", "sentry"],
+                        "enum": ["forge", "nexus", "sentry"],
                     }
                 },
                 "required": [],
@@ -188,7 +205,7 @@ def create_server() -> Optional[Server]:
                         "type": "string",
                         "description": "Hostname to switch for (default: zephyr)",
                         "default": DEFAULT_HOST,
-                        "enum": ["zephyr", "forge", "nexus", "sentry"],
+                        "enum": ["forge", "nexus", "sentry"],
                     }
                 },
                 "required": [],
@@ -213,16 +230,16 @@ def create_server() -> Optional[Server]:
             if name == "nix_flake_check":
                 result = await nix_flake_check()
             elif name == "nixos_rebuild_build":
-                hostname = arguments.get("hostname", DEFAULT_HOST)
+                hostname = _resolve_hostname(arguments.get("hostname", DEFAULT_HOST))
                 result = await nixos_rebuild_build(hostname)
             elif name == "nixos_rebuild_test":
-                hostname = arguments.get("hostname", DEFAULT_HOST)
+                hostname = _resolve_hostname(arguments.get("hostname", DEFAULT_HOST))
                 result = await nixos_rebuild_test(hostname)
             elif name == "nixos_rebuild_switch":
-                hostname = arguments.get("hostname", DEFAULT_HOST)
+                hostname = _resolve_hostname(arguments.get("hostname", DEFAULT_HOST))
                 result = await nixos_rebuild_switch(hostname)
             elif name == "nixos_rebuild_safe_switch":
-                hostname = arguments.get("hostname", DEFAULT_HOST)
+                hostname = _resolve_hostname(arguments.get("hostname", DEFAULT_HOST))
                 result = await nixos_rebuild_safe_switch(hostname)
             elif name == "nix_flake_update":
                 result = await nix_flake_update()

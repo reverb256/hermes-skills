@@ -8,7 +8,7 @@ Custom skills for managing the NixOS multi-host cluster.
 
 | Skill | Description |
 |-------|-------------|
-| `nixos-deploy` | Multi-host Colmena deployment across zephyr, nexus, forge, sentry |
+| `nixos-deploy` | Multi-host Colmena deployment across nexus, forge, sentry (zephyr excluded from local deployments) |
 | `nixos-developer` | NixOS development patterns and best practices |
 | `add-service-mcp` | Create systemd service modules |
 | `nix-rebuild-mcp` | Safe nixos-rebuild with mining pause |

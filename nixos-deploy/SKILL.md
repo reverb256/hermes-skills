@@ -1,11 +1,11 @@
 ---
 name: nixos-deploy
-description: Multi-host NixOS deployment using Colmena. Use when user asks to: deploy to cluster, apply to remote hosts, sync config, deploy to nexus/forge/sentry, or use colmena commands.
+description: Multi-host NixOS deployment using Colmena. Use when user asks to: deploy to cluster, apply to remote hosts, sync config, deploy to nexus/forge/sentry, or use colmena commands. Note: zephyr is excluded from local deployment targets.
 ---
 
 # NixOS Deploy
 
-Multi-host NixOS deployment using Colmena for the 4-host cluster (zephyr, nexus, forge, sentry).
+Multi-host NixOS deployment using Colmena for the deployment targets: nexus, forge, and sentry. Zephyr is excluded from local deployments.
 
 ## When to Use This Skill
 
@@ -13,17 +13,19 @@ Use this skill when the user:
 - Asks to "deploy to cluster", "deploy to all hosts", "push config"
 - Wants to "deploy to nexus", "apply to forge", "update sentry"
 - Mentions "colmena", "remote deployment", "multi-host"
-- Needs to sync NixOS configuration from zephyr to remote hosts
+- Needs to sync NixOS configuration from the controller host to remote hosts
 - Asks about deployment status, remote builds, or applying changes
 
 ## Cluster Overview
 
 | Host | Role | Hardware | Network | Access |
 |------|------|----------|---------|--------|
-| **zephyr** | Main workstation | AMD Zen, 2x NVIDIA | Local | Direct (sudo) |
+| **zephyr** | Main workstation (not a deployment target) | AMD Zen, 2x NVIDIA | Local | Direct (sudo) |
 | **nexus** | Gaming/mining | AMD Zen, 2x NVIDIA | Tailscale | Colmena SSH |
 | **forge** | Mining/AI | Intel, NVIDIA + AMD | Tailscale | Colmena SSH |
 | **sentry** | Mining/AI | AMD Zen, AMD GPU | Tailscale | Colmena SSH |
+
+**Note:** Local deployments via Colmena target only **nexus, forge, and sentry**. Zephyr is managed locally and is not included in automated deployment flows.
 
 ### Network Architecture
 ```
@@ -49,7 +51,7 @@ Use this skill when the user:
 ### Justfile Recipes (Recommended)
 ```bash
 just deploy          # Deploy to all hosts
-just zephyr          # Deploy to zephyr only (local)
+just zephyr          # Local rebuild on zephyr only (not a Colmena deployment target)
 just nexus           # Deploy to nexus only
 just forge           # Deploy to forge only
 just sentry          # Deploy to sentry only
@@ -61,10 +63,10 @@ just test            # Dry-run build test
 # Build all hosts (dry run)
 nix run .#apps.x86_64-linux.colmena -- build
 
-# Apply to specific host
-nix run .#apps.x86_64-linux.colmena -- apply --on zephyr
+# Apply to specific host (nexus, forge, sentry only)
+nix run .#apps.x86_64-linux.colmena -- apply --on nexus
 
-# Apply to remote hosts (uses boot goal)
+# Apply to all deployment targets (uses boot goal)
 nix run .#apps.x86_64-linux.colmena -- apply --on nexus,forge,sentry boot
 
 # Apply to all hosts
@@ -87,7 +89,7 @@ ssh sentry
 ## Deployment Workflow
 
 ### 1. Make Configuration Changes
-Edit files on zephyr (`/etc/nixos/`):
+Edit files on the controller host (`/etc/nixos/`):
 ```bash
 # Edit shared modules
 vim modules/services/ai-inference/gateway.nix
@@ -149,9 +151,9 @@ All deployment commands automatically pause mining on remote hosts:
 # 3. Restart mining services (even if deployment fails)
 ```
 
-## Sync Configuration from Zephyr
+## Sync Configuration from the Controller Host
 
-The cluster is configured from zephyr. To sync:
+The cluster is configured from the controller host. To sync:
 
 ### Option A: Git-Based Sync
 ```bash
@@ -175,10 +177,10 @@ just deploy  # Syncs and applies to all hosts
 
 ## Host-Specific Differences
 
-### Zephyr (Local)
+### Zephyr (Local Workstation)
 - Direct `sudo` access
-- Uses `switch` goal (immediate activation)
-- Development and testing done here
+- Used for development and testing
+- Not included in automated Colmena deployment targets
 
 ### Nexus (Remote)
 - AMD Zen + 2x RTX 3060 Ti
@@ -292,6 +294,6 @@ colmena = {
 | View remote logs | `ssh forge "journalctl -u ai-inference-gateway -f"` |
 
 ## Related Skills
-- **nix-rebuild**: For local NixOS rebuilds on zephyr
+- **nix-rebuild**: For local NixOS rebuilds on the controller host
 - **add-service**: For creating new services to deploy
 - **ai-gateway-manager**: For managing gateway after deployment

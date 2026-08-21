@@ -75,7 +75,7 @@ in
 
 
 async def create_service_module(
-    service_name: str, description: str, hostname: str = "zephyr"
+    service_name: str, description: str, hostname: str = "nexus"
 ) -> Dict[str, Any]:
     """Create a new systemd service module."""
     try:
@@ -162,7 +162,7 @@ async def register_module_in_default(
 
 
 async def enable_service_on_host(
-    service_name: str, hostname: str = "zephyr"
+    service_name: str, hostname: str = "nexus"
 ) -> Dict[str, Any]:
     """Enable service on host configuration."""
     try:
@@ -281,9 +281,9 @@ def create_server() -> Server:
                     },
                     "hostname": {
                         "type": "string",
-                        "description": "Target hostname",
-                        "default": "zephyr",
-                        "enum": ["zephyr", "forge", "nexus", "sentry"],
+                        "description": "Target hostname (zephyr is excluded from local deployments)",
+                        "default": "nexus",
+                        "enum": ["forge", "nexus", "sentry"],
                     },
                 },
                 "required": ["service_name"],
